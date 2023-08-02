@@ -1,0 +1,74 @@
+\chapter{Conclusion et perspectives}
+\label{chpt:future-works}
+
+    Ce manuscrit a présenté trois contributions principales visant a répondre à différentes problématiques concernant l'analyse de robustesse d'un programme dans le contexte de l'injection de fautes et de l'analyse de contre-mesures.
+    L'outil Lazart fournit un ensemble d'analyses pour la recherche d'attaques.     
+    Plusieurs algorithmes visant à aider au placement de contre-mesures logicielles ont été présentés.
+    L'optimisation de détecteur propose une solution pour réduire l'ensemble des protections appliquées à un programme.
+    Ces différentes contributions visent à prendre en compte les fautes multiples, et donc le fait que les protections ajoutées puissent être attaquées.
+
+    Cette conclusion revient sur les différentes contributions de ce manuscrit, ainsi que sur leurs limitations. Elle présente des perspectives de recherche permettant d'étendre ce travail et de répondre à certaines des problématiques soulevées. 
+
+    \paragraph{}
+    \textbf{Lazart.} L'outil d'analyse de robustesse dans le cadre des fautes multiples Lazart (chapitres \ref{chpt:lazart} et \ref{chpt:lazart-implem}) a été développé et étendu au cours de cette thèse.
+    Les différentes analyses proposées visent à aider l'utilisateur pour la recherche de chemins d'attaques et l'analyse de contre-mesures.
+    La redondance et l'équivalence permettent de simplifier les résultats fournis à l'utilisateur en ne sélectionnant que les attaques les plus pertinentes. 
+    L'analyse de points chauds peut être utilisée dans le contexte de la réduction de l'espace de recherche mais aussi pour évaluer les contre-mesures, en appliquant l'analyse sur les chemins d'attaques détectées afin de déterminer les points d'injection qui sont le plus souvent bloqués.     
+    Parmi les perspectives des travaux présentés dans ce manuscrit, un certain nombre sont liées à l'extension de Lazart. 
+
+    \paragraph{}
+    \textit{Extension des modèles de fautes.}      
+    L'extension de l'outil vis-à-vis du support de nouveaux modèles de fautes serait profitable pour la recherche de chemins d'attaques ainsi que pour l'étude de contre-mesures visant des modèles non supportés par Lazart.
+    Les modèles actuellement implémentés par l'outil permettent de couvrir un large spectre de modèles de fautes communément considérés au niveau logiciel. La mutation de donnée sur les \texttt{load} (\gls{DL}) permet de simuler les attaques sur le flot de données tandis que le modèle de l'inversion de test (\gls{TI}) et du saut arbitraire (\gls{JMP}) permettent de représenter les attaques au niveau du flot de contrôle.
+    D'autres modèles tels que le saut de fonction par exemple peuvent être simulés à l'aide de l'inversion de test.
+    Cependant, le support de modèles de fautes plus spécifiques peut avoir des avantages en termes de performance et d'ergonomie pour l'utilisateur. Par exemple, le modèle \texttt{then/else} consistant à exécuter successivement les deux branches d'un test conditionnel\footnote{Pouvant correspondre à plus bas niveau à un NOP de l'instruction de branchement terminant le bloc then par exemple.} peut être simulé à l'aide du modèle de saut arbitraire mais requiert l'utilisation de l'instrumentation du programme, ce qui ne serait pas le cas avec un support \og natif \fg{} via Wolverine.
+    Les modèles liés aux pointeurs sont difficiles à prendre en compte pour Lazart, notamment parce que KLEE ne supporte pas les pointeurs symboliques. Cela étant, il est envisageable de considérer des modèles de faute sur les données sans manipuler directement des adresses, par exemple en mutant l'identité des variables dans le code LLVM, permettant ainsi de simuler l'injection de fautes sur des adresses.
+    
+    \paragraph{}
+    \textit{Extension de la bibliothèque de programmes d'exemples.}
+    Un grand nombre des programmes d'exemples présentés dans ce manuscrit sont issus de la collection FISSC \cite{Dureuil/PPLCC16}.
+    Ceux-ci ont été mis à jour au cours de cette thèse de manière à les rendre plus modulaires afin de pouvoir étudier différentes propriétés (différents objectifs d'attaque, l'impact de l'inlining des fonctions, et l'ajout de certaines protections locales dans les exemples).
+    Les programmes \textit{firmware updater} et \textit{memcmps} ont été développés afin de pouvoir étudier des combinaisons de modèles sur les données et le flot de contrôle.
+    La recherche de nouveaux programmes de test serait un plus afin de pouvoir expérimenter sur des exemples, que ce soit pour leur complexité afin de tester le passage à l'échelle, leur représentativité en tant que code destiné à des appareils sécurisés ou encore pour mettre en évidence des attaques ou des modèles de fautes. 
+    L'extension des contre-mesures automatiques de Lazart (multiplication de tests, multiplication de loads et SSCF) est aussi une solution pour étendre les programmes d'exemple, en permettant de générer des versions protégées.
+
+    \paragraph{}
+    \textbf{Placement de contre-mesure.}  
+    Plusieurs algorithmes de placement de contre-mesures ont été proposés (chapitre \ref{chpt:placement}).  
+    Ces algorithmes visent des classes particulières de contre-mesures, impliquant les notions de localité, pondération, adéquation et complétude. Ces algorithmes se basent sur un catalogue de contre-mesures, et leurs garanties dépendent des propriétés de ce catalogue.
+    La protégeabilité d'un modèle de faute permet de classifier les modèles en fonction du type de protection possible.   
+
+    \paragraph{}
+    \textit{Extension des contre-mesures supportées.}
+    Une piste d'amélioration consiste à étendre les algorithmes de placement pour pouvoir prendre en compte un ensemble plus large de contre-mesures. Plus particulièrement, les contre-mesures à granularité de l'ordre du bloc de base, d'une fonction ou bien encore d'une boucle pourraient être prises en compte.
+    Les propriétés des contre-mesures à considérer pour pouvoir estimer quelle granularité de contre-mesure est nécessaire en fonction du contexte restent encore à étudier.
+    Cette approche pourrait nécessiter de préciser à l'algorithme si un point d'injection appartient à une structure particulière (fonction, bloc de base...) du programme.
+
+    \paragraph{}
+    \textbf{Optimisation de détecteurs}
+    Concernant l'optimisation de détecteurs (chapitre \ref{chpt:ccpo}), la problématique du retrait des corps de contre-mesures à partir de l'ensemble $\mathcal{D}_i$ de détecteurs à conserver est délicate.
+    Le support de détecteurs à la forme moins contrainte, comme les super-détecteurs évoqués précédemment (section \ref{sec:ch6-supdect}), fait aussi partie des pistes d'exploration.
+
+    \paragraph{}
+    \textit{Optimisation de détecteurs symbolique.}
+    Une solution qui n'a pas encore été abordée précédemment consiste en l'utilisation d'une variable symbolique booléenne pour faire une disjonction des cas lors de l'arrivée sur un détecteur entre le code avec détecteur et le code sans détecteur.
+    Cela correspond à ce qui est fait avec Lazart pour l'injection des fautes, mais appliqué aux différents détecteurs. Cela permettrait de supporter des détecteurs d'une forme plus complexe.
+    Il est aussi envisageable d'étendre cette disjonction aux corps de contre-mesure, ce qui permettrait de les retirer au même titre que les détecteurs.     
+    Néanmoins, le passage à l'échelle d'une telle approche risque d'être encore plus difficile, la disjonction due aux structures de la contre-mesure se combinant à celle des fautes injectées.
+    De plus, certaines contre-mesures dont les paramètres dépendent des protections présentes dans le reste du programme (comme les valeurs attendues de \texttt{GSR} à chaque bloc pour SSCF), nécessiteraient de maintenir en parallèle les portions de code présentes dans le chemin courant.
+
+    \paragraph{}
+    \textbf{Approche par sur-approximation.}
+    Les implémentations présentées pour le placement et l'optimisation de contre-mesures reposent toutes sur l'exécution concolique pour la génération des traces d'exécution d'entrée.
+    L'utilisation d'une méthode de génération de traces par sur-approximation aurait du sens, cependant les expérimentations présentées pour la réduction de l'espace des points d'injection à l'aide de l'analyse statique (voir section \ref{lazart:metho}) tendent à montrer que les propriétés sont difficiles à prouver lorsqu'on prend en compte les fautes multiples. 
+    Le \og déroulement \fg{} des exécutions par l'exécution concolique offre des avantages importants en termes de précision des résultats.
+    Cela étant, il est possible d'imaginer des optimisations préalables, à la fois pour le placement et l'optimisation de détecteurs, de manière à écarter une partie des points d'injection ou des détecteurs à considérer.
+    Par exemple, l'optimisation de détecteurs pourrait profiter d'une analyse statique visant a minima à détecter les détecteurs inactifs afin de soulager l'exploration concolique.
+
+    \paragraph{}
+    \textbf{Support de représentation plus bas-niveau.}
+    Une autre piste d'amélioration pour Lazart concerne le support de niveaux de représentation différents.
+    Les approches de placement et d'optimisations de contre-mesures présentées précédemment sont, sur le principe, indépendantes du niveau de représentation considéré puisqu'elles se basent sur un ensemble de traces d'exécution.
+    L'application à des niveaux de représentation différent introduit cependant d'autres problématiques. 
+    Pour l'optimisation de détecteurs au niveau binaire par exemple, si l'objectif d'attaque dépend des adresses des instructions (qui dépendent alors de la présence ou non de certains détecteurs), il est plus délicat de garantir qu'un détecteur n'a pas d'impact sur la suite de l'exécution du programme (pour l'exécution non-bloquante).
+    

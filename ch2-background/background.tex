@@ -1,0 +1,359 @@
+\chapter{Analyse de robustesse dans le cadre d'injection de fautes multiples}
+\chaptermark{Analyse de robustesse pour l'injection multi-fautes} % Header overflow
+\label{chpt:background}
+
+    \setcounter{tocdepth}{2}
+    \section*{Table des Matières}
+    \localtableofcontents
+    
+    \section{Attaques physiques et injection de fautes}
+    \label{sec:physical-attacks}
+    
+        \subsection{Fautes matérielles aléatoires}
+        
+            En 1954, Isaac Azimov, un écrivain américain réputé pour ses écrits en science-fiction, publie le livre \og Les cavernes de l'acier \fg{} (dans son titre original \og The Caves of Steel \fg{} \cite{Asimov/Cave}), dans lequel un robot se voit désactivé par le rayonnement d'une particule alpha\footnote{Les particules alpha sont des rayonnements issus de la radioactivité.}. 
+            
+            Vingt ans plus tard, en 1975, Binder et al. \cite{binder1975satellite} indiquent que les anomalies électroniques observées sur les satellites de télécommunications pourraient être liées aux rayonnements ionisants issus du soleil provoquant le déclenchement de bascules. En 1978, May et al. \cite{May/78} découvrent que des erreurs de valeurs dans la mémoire dynamique \gls{dram}, appelées \textit{soft errors}, peuvent être causées par le rayonnement de particules alpha de l'environnement immédiat des cellules mémoires. 
+            
+            La problématique de la tolérance aux fautes (\textit{fault tolerance)} face aux corruptions silencieuses de la mémoire (\gls{sdc}) liées à des phénomènes physiques tels que les rayonnements cosmiques \cite{Ziegler/79}, est d'autant plus présente de nos jours en raison de la forte augmentation des tailles de stockages \cite{Charyyev/19}, ou des systèmes hautes performances (\gls{hpc}) \cite{di2016adaptive}. 
+            
+            Cela a donné lieu à la mise en place d'outils d'analyse de tolérance des programmes aux fautes matérielles \cite{Segall/FTCS88, Kanawati/FTCS92} ainsi que des mécanismes de protection au niveau logiciel ou matériel (comme le déploiement de codes correcteurs d'erreur ou de redondance des données par exemple \cite{Wu/17}). 
+            Les années 90 voient émerger l'injection de fautes \cite{karlsson1994using, clark1995fault}, une technique visant à injecter volontairement des fautes dans un système afin d'observer leurs effets sur un composant. Ces injections sont réalisées en induisant un stress sur le système visé à l'aide de radiations d'ions lourds ou de perturbations de l'alimentation par exemple.
+            
+        \subsection{Attaques par canaux auxiliaires}
+            
+            En 1996, Korsher et al. \cite{Kocher/96TA} présentent une attaque sur certains crypto-systèmes tels que RSA \cite{Rivest/78RSA} et Diffie-Hellman \cite{Diffie/76}. Ils parviennent à trouver des secrets via l'information que laisse fuiter l'implémentation (sans attaque). Ils confirment ainsi qu'il est possible de profiter des différences dans le temps d'exécution de ces algorithmes pour retrouver les clefs de chiffrement secrètes.
+            Ces attaques visant à obtenir de l'information secrète dans une implémentation à l'aide de l'étude de paramètres physiques sont nommées \textit{attaques par canaux auxiliaires} (\textit{side-chanel attacks}), ou attaques par canaux cachés. 
+            
+            Par la suite, les attaques par canaux auxiliaires se sont étendues à l'analyse de la consommation électrique (\gls{dpa}) \cite{Kocher/99DPA, Korcher/11}, du cache du processeur \cite{Tiri/DAC07}, des rayonnements électromagnétiques \cite{Pandolfi/CHES01} ou encore des ondes sonores telles que celles émises par un clavier \cite{Asonov/SSP04, Gupta/JCS18}.
+            L'existence de telles attaques implique la nécessité que l'analyse de sécurité d'un système prenne en compte ce type d'objectifs d'attaque. 
+            
+        \subsection{Attaques par injection de fautes}
+            
+            En 1997, Boneh et al. \cite{Boneh/EUROCRYPT97} présentent un modèle théorique permettant de casser des implémentations de crypto-systèmes. Prenant pour appui l'existence de fautes matérielles, ils proposent d'injecter volontairement des fautes pour casser l'implémentation des algorithmes cryptographiques \gls{rsa}, Fiat-Shamir \cite{Fiat/86} et Schnorr \cite{Schnorr/JC91}.
+            L'année suivante, Biham et al. \cite{Biham/AICC97} utilisent le terme de \gls{dfa} pour qualifier une attaque reposant sur l'injection volontaire de fautes afin de comparer une exécution normale à des exécutions fautées. Ils parviennent à récupérer la clef secrète d'une implémentation sur carte-à-puce de l'algorithme de chiffrement \gls{des} à l'aide de l'étude comparative d'un chiffré obtenu à partir d'un clair inconnu et de différents chiffrés dont le calcul a été fauté par la modification d'un bit. Ils proposent également une méthodologie pour appliquer ce type d'attaque. La \gls{dfa} est une attaque par canaux auxiliaires \textit{active} (où l'attaquant interagit avec le matériel cible).
+            
+            Dans les décennies suivantes, plusieurs techniques d'injection de fautes sont apparues: modification de la fréquence de l'horloge \cite{Agoyan/SCRAA10, Yuce/HSS18}, impulsion électromagnétiques \cite{Poucheret/FDTC11}, rayon de lumière \cite{Skorobogatov/CHES02} et faisceaux lasers \cite{Roscian/FDTC13, Colombier/HOST19} par exemple. Chaque méthode possède des caractéristiques spécifiques en ce qui concerne la difficulté et le coût de mise en place, la précision, la reproductibilité et l'effet des fautes \cite{BarEl/IEEE06}.
+            
+            \begin{sloppypar}   
+            Les exploitations de l'injection de fautes ont montré la possibilité d'obtenir des données secrètes d'un algorithme cryptographique \cite{Boneh/JC01, Biham/AICC97}, l'élévation de privilèges \cite{Timmers/FDTC16}, l'introduction de vulnérabilité par dépassement de tampon \cite{Nashimoto/JCE17, SSTIC20} ou bien encore l'évitement d'un boot sécurisé \cite{Nashimoto/JCE17} ou du module d'exécution de confiance \cite{Nashimoto/IACR22}. Des techniques d'injection au niveau logiciel ont aussi été développées, comme par exemple \textit{RowHammer} \cite{Park/IIRW14} qui vise à induire un changement d'une cellule \gls{dram} en actualisant de façon répétée les lignes adjacentes. 
+            \end{sloppypar}   
+            
+        \subsection{Plan du chapitre}
+            
+            Cette thèse vise l'aide à la conception d'applications robustes contre les attaques par injections de fautes, qui constituent une menace importante pour la sécurité des composants sensibles.
+            Il s'agit à la fois de l'aide au développeur et à l'auditeur qui évalue la robustesse de l'application. C'est pourquoi les contributions de cette thèse se concentrent majoritairement sur le niveau logiciel (code source, représentation intermédiaire et assembleur), pour s'intéresser aux fautes mettant en cause la logique algorithmique des implémentations.
+            L'objectif de ce chapitre est d'introduire les problématiques liées aux attaques par injection de fautes multiples et à leurs évaluation.
+            La section \ref{sec:models} définit les concepts de fautes et de modèles de faute et présente un panorama des modèles considérés afin de présenter les enjeux liés à la modélisation des fautes et de leur propagation au sein d'un système. 
+            La section \ref{sec:fi-protections} discute brièvement de la problématique de la mise en place de contre-mesures dans le cadre d'attaques en faute, ce qui sera détaillé dans le chapitre \ref{chpt:ccpo}.
+            La section \ref{sec:multi-fault} se penche sur les problématiques posées par les fautes multiples, c'est-à-dire lorsque l'attaquant est capable d'injecter plusieurs fautes lors de son attaque. 
+            La section \ref{sec:soa-tools} discute des différentes méthodes et outils utilisés pour l'analyse de robustesse dans le contexte de l'injection de fautes.
+        
+    \section{Fautes et modèles de faute}
+    \label{sec:models}
+    
+        Un \textit{modèle de faute} correspond au \textit{modèle d'action} du modèle d'attaquant (section \ref{sec:model-attack}), instancié au contexte des attaques par injection de fautes. Il représente l'ensemble des fautes qu'un attaquant est capable de réaliser dans le modèle.
+        La notion de \textit{faute} est directement liée au niveau de représentation considéré. 
+        Au niveau du code source d'un programme par exemple, les modèles de faute considérés correspondent à des abstractions des effets qu'une faute à plus bas niveau peut avoir sur le programme (par exemple modifier une valeur dans une variable ou changer un branchement). 
+        
+        Cette section vise à présenter les modèles de faute communément considérés aux différents niveaux de représentation en se concentrant sur les modèles au niveau logiciel.
+        La section \ref{sec:abstraction-level-fault} présente une classification des niveaux de représentation et discute des caractéristiques d'une faute et des problématiques de mise en relation des modèles de faute à des niveaux variables.
+        La section \ref{sec:soa-models} donne un aperçu des modèles de faute issus des attaques par injection de fautes et de l'analyse de robustesse.
+        Enfin, la section \ref{sec:model-classification} discute de la classification des modèles de faute. 
+        
+        \subsection{Niveaux de représentation et caractéristiques des fautes}
+        \label{sec:abstraction-level-fault}
+        
+            Une \textit{faute} est une modification de l'état du système entraînant un effet sur son comportement. Celle-ci peut-être induite par une injection physique, une injection logicielle ou encore une erreur aléatoire.
+            Différents niveaux de représentation sont considérés lorsqu'il s'agit d'analyser un programme ou d'appliquer des protections: au niveau logiciel (langage C, représentation intermédiaire ou assembleur), niveau micro-architectural (\gls{rtl}, \gls{vhdl}), au niveau matériel (technique d'injection physique utilisée) ou encore l'analyse d'un automate représentant le programme par exemple.
+            
+            La figure \ref{fig:abstraction-level} présente la terminologie qui sera utilisée dans la suite de ce manuscrit en ce qui concerne les niveaux de représentation.
+            Les niveaux sont ici organisés en partant du niveau le plus bas (niveau physique) au niveau le plus haut (niveau algorithmique).
+            Le \textit{niveau physique} correspond à la perturbation physique déclenchant le comportement fauté, que celle-ci soit liée à une erreur aléatoire, une injection de faute physique ou encore déclenchée par des moyens logiciels.
+            Cette injection se traduit au \textit{niveau du circuit} sur les portes logiques, les bascules et latches ou les cellules mémoires et se manifeste en fonction de la partie du système visé, au niveau \textit{micro-architectural} en ciblant une modification des données, des instructions ou de parties spécifiques du processeur par exemple.
+            A plus haut niveau, formant le \textit{niveau logiciel}, les fautes sont observables au niveau binaire, au niveau assembleur et au niveau source qui se rapprochent davantage de la logique algorithmique ou des propriétés logiques attendues par la spécification.
+            
+            \begin{figure}[ht]\centering
+              \includegraphics[scale=.43]{ch2-background/img/Modeles all.drawio.png}
+              \caption{Classification et terminologie des niveaux de représentation}
+              \label{fig:abstraction-level}
+            \end{figure}
+            
+            Chaque niveau de représentation dispose d'avantages et d'inconvénients en ce qui concerne la représentativité du modèle étudié, la facilité de mise en place ou la facilité avec lesquels les résultats peuvent être observés. Un modèle plus haut niveau sera plus générique, plus proche des propriétés logiques de la spécification, tandis qu'un modèle bas niveau sera plus proche de l'effet des techniques d'injections de fautes.   
+        
+            La manière dont les fautes sont propagées aux travers des différents niveaux n'est pas toujours bien comprise. 
+            Observer l'effet d'une faute à un niveau supérieur n'est pas forcément évident.
+            L'effet de la faute peut se perdre, par exemple une modification de donnée qui aurait lieu juste avant une réécriture de cette variable passerait inaperçue (schéma \gls{wwr}, aussi appelé \textit{faute inactive}), et les techniques d'injection de fautes peuvent avoir des taux de reproductibilité assez bas.
+            Observer l'effet des fautes est donc une problématique à part entière et la caractérisation des modèles de faute vise à comprendre l'effet des fautes et leur propagation aux niveaux suivants \cite{Balasch/FDTC11, Dureuil/CARDIS15, werner2020end}.             
+            
+            Le \textit{modèle de faute} est donc une spécification de l'ensemble des fautes qu'on autorise à l'attaquant et revient à décrire quelles sont les caractéristiques des fautes qui sont acceptées par le modèle.
+            L'\textit{effet de la faute} est une caractéristique des fautes mais d'autres caractéristiques peuvent être considérées. En particulier la \textit{persistance temporelle} (\textit{combien de temps la faute a un impact sur le programme ?}) et la \textit{position spatio-temporelle} (\textit{où et quand la faute est injectée ?}). Pareillement, ces caractéristiques ont un sens qui dépend du niveau de représentation considéré.
+            
+            \subsubsection{Position spatio-temporelle d'une faute}
+            
+                Au niveau physique, une faute peut être caractérisée par sa position spatiale (\textit{où la faute est injectée ?}) et sa position temporelle (\textit{quand la faute est injectée ?}). En fonction de la technique d'injection utilisée, la position peut correspondre sur le composant à une entrée physique (tension d'alimentation ou fréquence d'horloge) ou à des bits dans des cellules mémoires ou un bus par exemple.
+                La position temporelle correspond au moment où l'injection est effectuée, par exemple compté depuis le démarrage de l'exécution.
+                
+                A plus haut niveau, ces deux notions peuvent être plus difficiles à distinguer. Au niveau source par exemple, la position de la faute peut correspondre à un point de contrôle du programme, appelé alors \textit{point d'injection} (\gls{ip}). Le listing \ref{lst:inj-point} présente les points d'injection dans une fonction \texttt{compare} avec un modèle de faute permettant à l'attaquant d'inverser le résultat d'une condition. Durant l'exécution, $IP1$ et $IP2$ peuvent se déclencher, c'est-à-dire qu'une faute peut y être injectée à chaque exécution de boucle. 
+            
+\lstset{caption={Points d'injection pour la fonction \texttt{compare}},label=lst:inj-point}
+\begin{lstlisting}     
+bool compare(uint8_t* a1, uint8_t* a2, size_t size)
+{
+    bool result = true;
+    for(size_t i = 0; i < size; i++) { // IP1
+        if(a1[i] != a2[i]) { // IP2
+            result = false;
+        }
+    }
+    return result;
+}
+\end{lstlisting}            
+
+                On appellera l'\textit{espace de faute} l'ensemble des points d'injection sur un programme pour un modèle de faute donné. La figure \ref{fig:soft-hard-compare} présente l'espace des fautes pour le modèle d'inversion de test logiciel, ainsi que l'espace des fautes d'un modèle au niveau physique permettant d'obtenir un comportement d'inversion de test, par exemple en ciblant le registre contenant le résultat de la condition lors des évaluations des tests. Les fautes sont ici les mêmes mais sont caractérisées par un ensemble de points d'injection dans le cas du modèle au niveau logiciel et par les paramètres de l'injection au niveau physique.
+                
+                \begin{figure}
+                  \makebox[\textwidth][c]{\includegraphics[scale=.41]{ch2-background/img/spatiotemporal.drawio.png}}
+                  \caption{Comparaison des fautes sur la fonction compare en inversion de test}
+                  \label{fig:soft-hard-compare}
+                \end{figure}            
+        
+            \subsubsection{Persistance temporelle}
+                
+                BarEl et al. \cite{BarEl/IEEE06} indiquent qu'un circuit peut être sujet à deux types de fautes: les fautes \textbf{permanentes} (destructives) et les fautes \textbf{transitoires}.
+                Dans le cas de fautes \textit{transitoires} (ou \textit{provisoires}), la faute a un effet immédiat sur le système en provoquant une mauvaise interprétation d'un signal. Lorsque la faute cesse, le circuit revient ensuite à son état initial.
+                A l'inverse, les fautes \textit{destructives} ont un effet permanent sur le système en altérant l'intégrité d'un registre, d'une cellule mémoire ou du circuit par exemple.
+                
+                En pratique, cette taxonomie au niveau physique est difficile à transposer à un niveau d'abstraction plus élevé. Une faute transitoire peut avoir un effet \textit{permanent} ou \textit{semi-permanent}, sur le programme.
+                Par exemple, si une faute transitoire modifie une valeur dans un registre qui est ensuite écrite en mémoire vive (\gls{ram}), alors l'effet de la faute persistera jusqu'à la fin de l'exécution du programme. Dans sa thèse \cite{Brejon/Phd20}, J.-B. Bréjon parle de \textbf{faute persistante} lorsque qu'une faute transitoire a un effet qui persiste au delà de son effet physique sur le circuit. Il cite aussi le cas où une faute transitoire implique une modification d'une instruction du programme chargée en \gls{ram}.
+                Dans un cas plus extrême, une faute transitoire peut avoir un effet permanent sur un système, par exemple si la valeur fautée est ensuite utilisée dans un système de mise à jour de micro-programme (firmware updater). La faute aura alors un impact sur le système même après la fin de l'exécution du programme, voire provoquera l'arrêt du système, la faute ayant été répercutée dans la mémoire non volatile.
+                On parle aussi de fautes \textit{transitoires répétitives} \cite{Berthome/ARES12} lorsqu'une faute transitoire peut être répétée, par exemple en fautant un bus mémoire plusieurs fois pour introduire plusieurs valeurs invalides successivement.
+            
+        \subsection{État de l'art des modèles de faute}
+        \label{sec:soa-models}
+        
+            Cette sous-section propose un aperçu des modèles de faute considérés dans la littérature, à la fois par les attaques physiques et par les outils d'analyse. Cet état de l'art est organisé en fonction du niveau de représentation du programme.
+            La section \ref{sec:model:physic} présente les modèles au niveau matériel, la section \ref{sec:model:binary} les modèles de faute au niveau de la micro-architecture et du jeu d'instructions, ainsi que des modèles au niveau assembleur et finalement la section \ref{sec:model:source} se concentre sur les modèles au niveau source.
+        
+            \subsubsection{Modèles au niveau matériel}
+            \label{sec:model:physic}
+            
+                Au niveau physique, l'injection d'une faute introduit une perturbation qui va modifier le fonctionnement du circuit. Le circuit peut consister en des portes logiques, des cellules mémoire ou encore des bascules.
+                
+                Le modèle de faute considéré à bas niveau est lié à la technique d'injection de fautes utilisée. Certaines techniques comme celles basées sur les ondes électromagnétiques \cite{Maistri/VLSI-SoC14, Dument/FDTC19} ou les impulsions laser \cite{Van/FDTC11, Dutertre/DTIS14} ont une haute précision à l'inverse des glitchs de température \cite{Hutter/ICSCRAA13} par exemple.
+                Les caractéristiques des fautes injectées vont alors dépendre des paramètres expérimentaux choisis (moment et position de l'injection, durée et intensité d'un rayonnement etc.).
+                
+                \begin{table}[ht]
+                \centering
+                    \begin{tabular}{|l|l|l|l|}
+                    \hline
+                    Valeur / Granularité & Niveau bit & Niveau byte & Autres plages \\ \hline \hline
+                    mise à 0                             & bit-set       & byte set        & set          \\ \hline
+                    mise à 1                             & bit-reset     & byte reset      & reset        \\ \hline
+                    inversion                            & bit flip   & byte flip       & flip         \\ \hline
+                    aléatoire                            & bit ran    & byte ran       & rand    \\    \hline
+                    \end{tabular}               
+                \caption{Modèle de faute sur les données \label{tbl:bits}}
+                \end{table}
+                
+                Au niveau d'une donnée dans le circuit (dans un bus ou une cellule mémoire par exemple), on distingue souvent les modèles en fonction de la granularité de la plage de bits pouvant être visée et la façon dont la valeur peut être modifiée, comme indiqué dans la table \ref{tbl:bits}.
+                La granularité de la faute en donnée peut consister en un seul bit, un octet, une plage contiguë quelconque ou une plage non contiguë de bits.
+                Concernant la valeur fautée, on peut distinguer les modèles de mise-à-zéro et de mise-à-un ainsi que l'inversion des bits. 
+                Les modèles de type aléatoire permettent de simuler les injections en données sur des mémoires chiffrées où l'attaquant a un contrôle limité sur la valeur qui pourra être injectée. 
+            
+            \subsubsection{Modèles au niveau architectural et ISA}
+            \label{sec:model:binary}
+            
+                Au niveau architectural, les fautes peuvent être distinguées en fonction de la partie de l'architecture qui est ciblée comme présenté dans la figure \ref{fig:arch-models-scheme}:
+                \begin{itemize}
+                    \item fautes sur les instructions,
+                    \item fautes sur les données (registres, cache, mémoire),
+                    \item fautes sur la micro-architecture: pipeline, registres cachés...
+                \end{itemize}             
+                
+                \begin{figure}[ht]
+                    \centering
+                    \includegraphics[scale=.56]{ch2-background/img/Modeles Architecture fr.drawio.png}
+                    \caption{Classification des modèles au niveau architectural}
+                    \label{fig:arch-models-scheme}
+                \end{figure}
+                    
+                \paragraph{}
+                Lorsqu'on se place au niveau du jeu d'instructions (\gls{isa}), une modification de bits induit une transformation des instructions ou des données.
+                Une faute peut avoir pour effet la modification de l'opérande (les paramètres de l'instruction), de l'opcode (le type de l'instruction) ou les deux.
+                
+                La figure \ref{fig:armv7-mov-encoding} présente la spécification de l'encodage des trois versions de l'instruction \textit{MOV} dans le jeu d'instructions \textit{ARMv7-M thumb2} \cite{ARMv7/manual}. 
+                Les bits correspondant à l'opcode dans l'encodage sont indiqués avec une valeur fixe binaire tandis que les opérandes sont nommées. Les opérandes de la forme \texttt{immX} correspondent à la valeur immédiate (constante) qui sera déplacée et \texttt{rd} correspond au registre de destination. Si ces bits sont changés par une faute, le type de l'instruction restera le même (MOV-TX), mais avec des paramètres différents \cite{Colombier/HOST19}.
+                Un cas particulier du remplacement d'instruction est le saut d'instructions\footnote{D'autres types de fautes peuvent toutefois induire un saut d'instruction, comme par exemple la modification du compteur du programme (\gls{pc}).} très largement étudié \cite{Balasch/FDTC11, Kelly/HOST17, Moro/FDTC13}, dans lequel la faute permet d'ignorer l'exécution d'une ou plusieurs instructions (par exemple, en transformant une instruction en instruction \gls{nop})).
+                Dans le cas de jeu d'instructions à taille d'instruction variable comme c'est le cas pour \textit{thumb}, la mutation au niveau de l'\textit{op-code} peut jouer sur la taille de l'instruction (en passant d'une instruction de deux à quatre octets ou réciproquement) et peut entraîner une mutation en cascade des instructions interprétées par la suite, et donc un impact significatif sur la structure du reste du programme au niveau binaire. Cette suite de décodage erronés \textit{flow shifting} \cite{Berthome/ARES12} est généralement assez courte en raison d'instructions invalides amenant à un crash du processeur \cite{Shacham/CCS07}.
+                
+                \begin{figure}[ht]
+                    \centering
+                    \includegraphics[scale=.32]{ch2-background/img/armv7-encoding.png}
+                    \caption{Encodage de l'instruction MOV sur l'architecture ARMv7-M thumb2}
+                    \label{fig:armv7-mov-encoding}
+                \end{figure}
+                
+                \paragraph{}
+                La modification des données consiste à changer les bits dans un registre du processeur, sur un bus mémoire pendant son transit ou dans la mémoire. La corruption de registre est également un modèle très étudié dans l'analyse au niveau binaire \cite{Blomer/CCS03, Verbauwhede/FDTC11}.
+                De la même manière qu'au niveau matériel, différentes valeurs et plages de bits peuvent être considérées en fonction du  modèle de faute comme indiqué dans la figure \ref{tbl:bits}.
+                Dans le domaine de la tolérance aux fautes, les modèles étudiés se restreignent souvent à une inversion de bit simple sur la donnée \cite{lu2015llfi, sharma2013towards, van2014evaluating, Georgakoudis/ICHPCNSA17, le2018resilience}. 
+                Les modèles considérant la modification de plusieurs bits contiguës voire de fautes indépendantes existent \cite{CERN07}.
+                La modification des données peut aussi correspondre à la modification d'une adresse ou de son calcul (comme un index de tableau par exemple).
+                
+                \paragraph{}
+                Au niveau micro-architectural, c'est-à-dire en tirant parti des spécificités de l'architecture interne du processeur et des composants, des modifications plus subtiles peuvent être observées.
+                Rivière et al. \cite{Riviere/HOST15} montrent qu'il est possible d'exploiter le tampon de pré-chargement du processeur (\textit{prefetch buffer}) pour annuler son remplissage et ainsi répéter une instruction en ignorant une partie des instructions suivantes.
+                Le rejeu d'instruction \cite{Riviere/FPS14} consiste à exécuter deux fois une instruction, par exemple en attaquant la valeur du \gls{pc}, ou de la pipeline du processeur.
+                Lorsqu'il s'accompagne du saut de l'instruction suivante, il peut s'assimiler à un remplacement de l'instruction.
+                Plus récemment, Laurent et al. proposent des exploitations de fautes sur la micro-architecture, avec notamment des effets sur le processeur non-observables sur le jeu d'instructions \cite{Laurent/ECDSD19, Laurent/DATE19}.
+                Par ailleurs, les modèles de faute visant les caches du processeur correspondent à des modèles ciblant la micro-architecture du processeur.
+                
+            \subsubsection{Modèle au niveau source}
+            \label{sec:model:source}
+            
+                A plus haut niveau, les modèles de faute s'intéressent davantage aux modifications de la logique algorithmique du programme. En fonction de si on se place au niveau du code source ou d'un niveau intermédiaire, la granularité des fautes peut varier.
+                La figure \ref{fig:software-models-scheme} présente une classification des modèles de faute au niveau source.
+                Deux grandes classes de modèles de faute se dégagent de la littérature: l'\textit{altération des chemins d'exécution} du programme et la \textit{modification des données}. 
+                
+                \begin{figure}[ht!]\centering
+                  \includegraphics[scale=0.49]{ch2-background/img/Class Logiciel.drawio.png}
+                  \caption{Classification des modèles de faute au niveau source}
+                  \label{fig:software-models-scheme}
+                \end{figure}
+            
+                L'altération des chemins d'exécution concerne les fautes ayant un effet sur l'intégrité du flot de contrôle \cite{Abadi/TISSEC09, Sayeed/AS19}. Il s'agit de détourner le flot d'exécution de son comportement normal.
+                Le \textit{graphe de flot de contrôle} (\gls{cfg}) est une représentation du flot de contrôle du programme correspondant à un graphe orienté. 
+                Les nœuds sont des blocs de base qui correspondent à une suite d'instructions atomiques (toujours exécutées en séquence).
+                Les arêtes correspondent aux branchements conditionnels et aux sauts.
+                Ainsi la figure \ref{fig:software-models-scheme} distingue les modèles axés sur la modification du flot de contrôle en fonction de leur impact sur le graphe de flot.
+                
+                Le modèle de l'inversion de test \cite{Berthome/ARES12, Potet/ICST14, Dureuil/PPLCC16} consiste à inverser le chemin sélectionné après une opération de branchement conditionnel. 
+                Dans \cite{Bouffard/SCRAA11}, Bouffard et al. parviennent à modifier le flot de contrôle d'un programme Java Card\footnote{Plateforme Java minimaliste embarquée pour les cartes à puce.} en attaquant l'adresse de retour d'une fonction.
+                Les modèles basés sur le saut d'instructions existent aussi au niveau source \cite{Moro/FDTC13, Potet/ICST14, Barry/CSCS16, Breier/TDSC19}.
+                Ils ont généralement une granularité plus faible au niveau logiciel qu'au niveau matériel, comme par exemple dans \cite{lalande}, où Lalande et al. s'intéressent à un modèle de saut d'instructions au niveau du langage C. Il peut aussi s'agir de sauts d'appels de fonction \cite{Dureuil/PPLCC16}.
+                Ces modèles attaquant l'intégrité du flot de contrôle sont un sujet important au niveau source, car ils induisent des comportements difficiles à anticiper et peuvent produire des nouveaux chemins dans l'application, que ce soit dans les outils d'analyse de robustesse tels que SmartCM \cite{Machemie/IFS11}, l'évaluation de contre-mesures \cite{Sere/IJSIA11} ou l'introduction de contre-mesures, par exemple à la compilation \cite{Werner/ICSCRAA15}. 
+                
+                La modification de données s'apparente principalement à la modification des valeurs lues ou écrites dans les variables, ou les valeurs temporaires utilisées pour calculer les expressions (i.e. les registres).
+                Breier et al \cite{Breier/TDSC19} étudient l'effet d'un nombre arbitraire d'inversions de bits dans un registre. 
+                La modification d'une donnée lors de la lecture en mémoire est également un modèle standard dans l'analyse de robustesse au niveau logiciel \cite{Moro/FDTC13, Berthome/ARES12}. 
+                Le modèle d'inversion de bit dans une zone mémoire est aussi fréquemment utilisé dans le domaine de la tolérance aux fautes \cite{Benso/TODAES98, Georgakoudis/ICHPCNSA17}.
+                L'attaque \textit{Rowhammer} \cite{Kim/ACM14} qui a été abordée dans le chapitre \ref{chpt:contexte} correspond à une modification de données sur la mémoire.
+                
+                \paragraph{}                
+                La modification de données peut avoir un effet sur le flot de contrôle, par exemple dans le cas d'une faute d'une adresse de retour, d'une adresse de fonction, d'une adresse lors d'un saut arbitraire, et plus généralement lorsqu'une valeur est utilisée par la suite dans une condition ou un saut. 
+                A l'inverse, le flot de contrôle peut avoir un effet comparable à une mutation de donnée puisque le flot détourné peut modifier des données différemment du comportement normal du programme.
+                Lacombe et al \cite{lacombe2021combining} proposent un modèle visant les expressions au niveau CIL (représentation intermédiaire de l'outil Frama-C), permettant de considérer à la fois les modifications de données arbitraire et les fautes visant le flot de contrôle (avec la mutation de la valeur finale de l'expression dans les conditions). 
+                
+        \subsection{Classification des modèles au niveau logiciel}
+        \label{sec:model-classification}
+        
+            Les sections précédentes ont présenté les problématiques liées à la mise en relation des modèles de faute à différents niveaux de représentation.
+            Celles-ci concernent à la fois la représentativité des modèles étudiés à haut niveau par rapport à la réalité physique, la difficulté de l'observation et de la caractérisation des fautes et la compréhension de leurs effets \cite{Dureuil/CARDIS15, werner2020end}.
+            Cette sous-section vise à présenter différentes approches pour classifier les modèles au niveau logiciel ainsi que la difficulté pour faire correspondre des modèles de niveaux différents.
+            
+            La figure \ref{fig:software-models-scheme} présentée dans la section \ref{sec:model:source} fait une première distinction entre les modèles sur le flot de contrôle et ceux sur les données. 
+            La classification des modèles source peut aussi être réalisée en partant de la cible des fautes à bas niveau (instructions, données, registres, pipeline etc.).
+            C'est en partie l'approche qui est utilisée dans la figure \ref{fig:arch-models-scheme} présentant les modèles au niveau architectural.
+            La modification de données sur des zones différentes de l'architecture implique alors des modèles haut niveaux très variables.
+    
+            Une autre solution serait de classifier les modèles en fonction de l'inclusion de l'ensemble des fautes pouvant être réalisées. Cela peut être fait en considérant l'espace de faute de chaque modèle ou bien en comparant les comportements obtenus par chaque modèle. Il est par exemple possible de considérer qu'un modèle de mutation de donnée est un sous-ensemble d'un modèle de modification arbitraire de donnée ou encore qu'une inversion de test peut correspondre, en partie, à un cas spécifique du saut d'instruction lorsqu'on se place au niveau de représentation \gls{isa}.
+            Cependant, cette approche a ses limites puisque les espaces de fautes de deux modèles peuvent ne pas avoir de relation d'inclusion et selon le niveau de représentation choisi, les relations entre les modèles de faute peuvent être très différentes. 
+            La combinaison de modèles de faute et la prise en considération de fautes multiples compliquent encore cette notion d'inclusion\footnote{Par exemple, un modèle de mutation de donnée sur une instruction d'écriture de mémoire (store) peut être simulée par un nombre non borné de mutations de donnée en lecture (load).}.  
+            
+            Cela illustre la difficulté de faire correspondre des modèles à des niveaux de représentation différents et la question de la légitimité de raisonner à propos de modèles trop bas niveau lorsqu'on considère un programme au niveau logiciel.
+            Les programmes doivent faire face à des attaquants très variés, et la définition ainsi que la modélisation des fautes sont des difficultés de l'évaluation de la robustesse d'un programme.
+            Les modèles au niveau logiciel visent à être suffisamment génériques pour couvrir un maximum les modèles pouvant effectivement être observés mais sans viser la correspondance exacte avec ces modèles bas niveau et s'orientent plutôt vers la prise en compte de la logique algorithmique du programme. 
+                    
+    \section{Protection contre les attaques physiques}
+    \label{sec:fi-protections}
+        
+        Afin de lutter contre les attaques physiques, de nombreuses solutions de protections ont été proposées \cite{BarEl/IEEE06, Yuce/HSS18}. 
+        Ces protections peuvent prendre des formes variées en fonction du niveau de représentation et du modèle d'attaquant considéré. Cette section vise à donner un court aperçu des protections contre les attaques par injections de faute et les attaques physiques (fautes accidentelles et canaux auxiliaires). 
+        Le chapitre \ref{chpt:placement} approfondit les problématiques liées à l'analyse et l'évaluation de protections dans le cadre d'attaques en fautes et présente un état de l'art des protections logicielles existantes dans la littérature.
+        
+        \begin{defi}
+            Une \textit{protection} correspond à toute modification du programme, de l'architecture ou du matériel et de leurs fonctionnements visant à empêcher une attaque d'aboutir, la détecter, la corriger ou la rendre plus difficile à effectuer.
+        \end{defi}
+        
+        \begin{defi}
+            Une \textit{contre-mesure} est une protection visant à détecter une attaque afin de pouvoir ensuite la signaler, la corriger ou prendre des mesures comme le redémarrage du système ou sa coupure.
+        \end{defi}
+        
+        Au niveau physique, les protections peuvent prendre la forme de détecteurs surveillant la tension d'alimentation ou la fréquence du circuit \cite{Zussa/DATE14}. 
+        Les boucliers actifs (\textit{active shields}) \cite{BarEl/IEEE06} correspondent à un maillage métallique dans lequel les données circulent en continue. Si le maillage est endommagé ou modifié, le circuit ne fonctionne plus.
+        Les détecteurs physiques permettent de réagir à une fréquence ou une tension inhabituelle \cite{BarEl/IEEE06}. 
+        Les protections visant à limiter la connaissance de l'attaquant en rendant l'observation plus difficile sont très fréquentes dans le domaine des canaux auxiliaires. Parmi les protections physiques de ce type on peut citer le chiffrement de la mémoire \cite{Barenghi/IEEE2012} ainsi que l'ajout d'aléa dans la consommation de courant par exemple \cite{Moro/Phd14} ou encore dans l'ordonnancement des instructions \cite{Wittman/RSA08}.
+        
+        Au niveau architectural, la tâche de l'attaquant peut être rendue plus ardue en utilisant un encodage pour le jeu d'instructions compliquant attaques: par exemple un encodage différent de \texttt{0} pour l'instruction \gls{nop} est une solution pour se protéger contre les attaques de mise-à-0.
+        Des protections par redondance des calculs ou des données peuvent par exemple être obtenues en ayant deux circuits de calcul dans le processeur ou l'\gls{alu}, qui comparent ainsi leur résultats, cette redondance pouvant être étendue à $n$ circuits redondants \cite{BarEl/IEEE06}.  
+        
+        Au niveau logiciel, les protections peuvent être appliquées sur toute la couche logicielle. On distinguera les protections appliquées en tant que transformation du programme et celles appliquées au niveau du système (système d'exploitation par exemple). 
+        Les protections qui effectuent une transformation du programme source peuvent être appliquées à plusieurs niveaux de représentation du programme. 
+        L'utilisation d'instructions idempotentes afin de se protéger contre les sauts d'instructions \cite{Moro/Phd14} a été proposée au niveau assembleur tandis que des protections ont été proposées au niveau du langage C \cite{lalande} ou lors de la compilation \cite{Barry/CSCS16, Proy/TACO17}. 
+        Certaines approches visent la protection de l'intégrité du flot de contrôle par des mécanismes de signature de blocs ou de fonctions \cite{Oh/TR02, Reis/ISCCO05, Ferriere/LLVM19} ou encore par l'utilisation d'une \textit{pile cachée} \cite{Dureuil/CARDIS15} par exemple.
+        L'utilisation de booléens endurcis visent à compliquer la tâche de l'attaquant d'une façon similaire à l'exemple de l'encodage du \gls{nop} pour le niveau architectural.
+        
+        Une partie des protections physiques, notamment celles basées sur la redondance des calculs ou de la mémoire, ou le chiffrement de celle-ci, peuvent être implémentées à plus haut niveau. Cependant, les protections logicielles peuvent être limitées par rapport à leurs équivalents physiques. En général, les systèmes sont protégés en combinant différents niveaux de protection \cite{Yuce/HASSP16}.
+        
+        \begin{figure}[htb]\centering
+          \includegraphics[scale=.58]{ch2-background/img/ch2-protections-caracs.png}
+          \caption{Caractéristiques des protections à différents niveaux}
+          \label{fig:ch2-protections}
+        \end{figure}
+        
+        \paragraph{} La figure \ref{fig:ch2-protections} compare certaines caractéristiques des protections en fonction du niveau auquel elles sont introduites: 
+        \begin{itemize}
+            \item \textit{Portabilité}: capacité à s'adapter à une architecture ou une application donnée.
+            \item \textit{Déploiement}: facilité de mise-à-jour de la protection.
+            \item \textit{Efficacité}: capacité à protéger.
+            \item \textit{Coûts}: coûts de développement et de mise en place.
+            \item \textit{Performance}: taille du code, consommation mémoire et temps d'exécution ajoutés.
+        \end{itemize}         
+        
+        Les protections physiques permettent de protéger l'ensemble des programmes d'un composant mais sont plus coûteuses à mettre en place et ne peuvent pas être modifiées une fois que le produit est déployé (une carte à puce par exemple). 	\`A l'inverse, les protections logicielles peuvent être ajoutées à l'aide de mises-à-jour logicielles. 
+        Les protections de plus haut niveau peuvent ainsi être adaptées aux protections disponibles à plus bas niveau sur lesquelles elles peuvent s'appuyer.  
+        Les protections bas niveau peuvent protéger des modules du système qui ne sont pas accessibles au niveau logiciel, mais ne peuvent pas être adaptées à un programme ou une pile logicielle particulière et visent une protection générique du composant.
+        
+        La protection contre les attaques en fautes est fortement compliquée contre les attaques en \textit{fautes multiples}.
+     
+    \section{Les fautes multiples}
+    \label{sec:multi-fault}
+        
+        La littérature récente contient des exemples d'attaques en fautes multiples \cite{kim2007fault, Barenghi/IEEE2012, Natella/ACM16, SSTIC20}.
+        
+        Les fautes multiples rendent le processus de développement d'un programme sécurisé d'autant plus difficile que le nombre de configurations de fautes possibles sur un programme croît rapidement. Cette explosion combinatoire complique l'expertise humaine et l'analyse des outils pour l'évaluation de robustesse.
+        De plus, la combinaison de plusieurs modèles de faute doit être considérée et rend plus complexe la protection et l'analyse de robustesse.
+        
+        Dans le cas de la protection d'un système, la présence de fautes multiples complique également la tâche. En effet, si plusieurs fautes peuvent être injectées, alors une protection peut elle-même être visée par une première faute pour rendre possible la seconde. Dans la fonction \textit{compare} du programme \texttt{verify\_pin} présentée dans le listing \ref{lst:verifyPIN-BAC-LC}, une première injection peut éviter la boucle \texttt{for} (par exemple avec une inversion de la condition \texttt{i < size}) et une seconde peut inverser la condition \texttt{if(i != size) killcard()} afin d'éviter la contre-mesure.
+            
+            
+\lstset{caption={Compteur de boucle sur la fonction \texttt{compare}},label=lst:verifyPIN-BAC-LC}
+\begin{lstlisting}     
+bool compare(uint8_t* a1, uint8_t* a2, size_t size)
+{
+    bool result = true;
+    for(size_t i = 0; i < size; ++i)
+        if(a1[i] != a2[i])
+            result = false;
+    
+    if(i != size) // Protection
+        killcard();
+        
+    return result;
+}
+\end{lstlisting}
+    
+        Cette possibilité d'attaquer les protections elles-mêmes, d'autant qu'une grande partie de la littérature propose des contre-mesures visant principalement des fautes uniques, rend l'évaluation et la conception de protections plus complexes dans le contexte des fautes multiples.
+        La prise en compte des fautes multiples pour l'analyse de robustesse de programme et pour l'analyse de protections est une problématique à laquelle cette thèse vise à répondre sur deux aspects:
+        
+        \begin{itemize}
+            \item Maîtriser l'exploration des exécutions en multi-fautes malgré l'explosion combinatoire des chemins (chapitres \ref{chpt:lazart} et \ref{chpt:lazart-implem}).
+            \item Aider à l'analyse et au placement des contre-mesures dans un contexte multi-fautes (chapitres \ref{chpt:placement} et \ref{chpt:ccpo}).
+        \end{itemize}
+        
+        Avant de s'intéresser à l'outil Lazart, la suite de se chapitre se termine par une analyse des outils existants.
+            
+    \input{ch2-background/soa-tools}
+    
+    

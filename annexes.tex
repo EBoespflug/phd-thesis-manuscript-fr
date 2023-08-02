@@ -1,0 +1,439 @@
+\input{ch3-lazart/annexes}
+
+\chapter{Programmes d'expérimentation}
+
+    Cette annexe présente plusieurs programmes utilisés dans différentes expérimentation de ce manuscrit.
+    Il s'agit de donner le code des programmes ainsi que les objectifs d'attaque qui sont étudiés.
+    Le code des programmes a été légèrement modifié de manière à rendre les codes auto-suffisant et certaines macros, permettant la compilation conditionnelle de différentes versions protégées du programme, ont été retirée par soucis de simplicité.
+
+    La section \ref{annexe:prgm:vp2b} présente le programme \texttt{verify\_pin\_2b}.
+    La section \ref{annexe:prgm:memcmps3} décrit le programme \texttt{memcmps3}. 
+    La section \ref{annexe:prgm:fu2} présente le programme \texttt{firmware\_updater\_2}.
+
+    \section{Programme \texttt{verify\_pin\_2b}}
+    \label{annexe:prgm:vp2b}
+    
+        Le programme \textit{verify\_pin\_2b} (listing \ref{lst:vp2b}) est une version du programme \texttt{verify\_pin} comprenant les booléens endurcis et la boucle en temps constant. Contrairement à la version \texttt{verify\_pin\_2} de la collection \gls{fissc}, il n'y a pas de contre-mesure visant à vérifier le compteur de boucle.
+    
+        Ce programme a notamment été utilisé dans le chapitre \ref{chpt:placement} en tant que programme d'exemples pour les expérimentations (voir section \ref{sec:placement-exps}).
+        Il est analysé avec le modèles \gls{TI} (ou \gls{BI}).
+
+\lstset{caption={Programme d'analyse pour \texttt{verify\_pin\_2b}},label=lst:vp2b,language=C}
+\begin{lstlisting}
+#include "lazart.h"
+
+typedef int sec_bool_;
+typedef enum { sec_true = 0xAA,
+    sec_false = 0x55 } sec_bool_t;
+
+#define BOOL sec_bool_t
+#define TRUE sec_true
+#define FALSE sec_false
+
+#define PIN_SIZE 4
+#define TRY_COUNT 3
+
+uint8_t try_counter;
+uint8_t card_pin[PIN_SIZE];
+
+BOOL compare(uint8_t* a1, uint8_t* a2, size_t size)
+{
+    int i;
+    bool diff = FALSE;
+    for (i = 0; i < size; i++) { // OT
+        if (a1[i] != a2[i]) { // 1T
+            diff = TRUE;
+        }
+        // 1F
+    } // OF
+    return !diff;
+}
+
+
+BOOL verify_pin(uint8_t* user_pin)
+{
+    if (try_counter > 0) { // 2T
+        if (compare(card_pin, user_pin, PIN_SIZE) == TRUE) { // 3F
+            try_counter = TRY_COUNT;
+            return TRUE;
+        } else { // 3F
+            try_counter--;
+            return FALSE;
+        }
+    }
+    // 2F
+
+    return FALSE;
+}
+
+
+void init(uint8_t* user_pin, uint8_t* card_pin)
+{
+    try_counter = TRY_COUNT;
+    klee_make_symbolic(user_pin, PIN_SIZE, "user_pin");
+    klee_make_symbolic(card_pin, PIN_SIZE, "card_pin");
+
+    int equal = (card_pin[0] == user_pin[0]) & (card_pin[1] == user_pin[1]) & (card_pin[2] == user_pin[2]) & (card_pin[3] == user_pin[3]);
+
+    klee_assume(!equal);
+}
+
+bool oracle(BOOL ret) { 
+    return ret == TRUE & !_LZ__triggered();
+}
+
+int main()
+{
+    uint8_t user_pin[PIN_SIZE];
+
+    init(user_pin, card_pin);
+
+    bool ret = verify_pin(user_pin);
+    _LZ__ORACLE(oracle(ret));
+
+    return 0;
+}
+\end{lstlisting}
+
+    \section{Programme \texttt{memcmps3}}
+    \label{annexe:prgm:memcmps3}
+        Le programme \texttt{memcmps3} (listing \ref{lst:memcmps3}) correspond à une versions protégée de la fonction standard \texttt{memcmp}, utilisant des masques.
+        La version 3 contient 4 appels à la fonction standard, contrairement à la version 2 (voir section \ref{sec:lz:memcmps}) qui n'en contient que 3.
+    
+        L'objectif d'attaque étudié correspond à retourner \texttt{TRUE}, avec des tableaux d'entrées différents.
+        Le programme peut être analysé avec le modèle \gls{TI} ou en mutation de donnée sur les variables \texttt{len} et \texttt{result}.  
+
+\lstset{caption={Programme d'analyse pour \texttt{memcmps3}},label=lst:memcmps3,language=C}
+\begin{lstlisting}  
+#include "lazart.h"
+#include <stdio.h>
+
+#define TRUE 0x1234
+#define FALSE 0x5678
+#define MASK 0xABCD
+#define MASK2 0xF4F4
+
+int memcmps3(char* a, char* b, int len)
+{
+    int result = FALSE;
+    if (!memcmp(a, b, len)) {
+        result ^= FALSE ^ MASK; // result = MASK
+        if (!memcmp(a, b, len)) {
+            result ^= MASK2; // result = MASK ^ MASK2
+            if (!memcmp(a, b, len)) {
+                result ^= TRUE ^ MASK; // result = MASK2 ^ TRUE
+                if (!memcmp(a, b, len))
+                    result ^= MASK2; // result = TRUE
+            }
+        }
+    }
+
+    return result;
+}
+
+void initialize_sym(char s1[SIZE], char s2[SIZE])
+{
+    klee_make_symbolic(s1, SIZE * sizeof(char), "s1");
+    klee_make_symbolic(s2, SIZE * sizeof(char), "s2");
+    int equal = 0;
+    for (unsigned int i = 0; i < SIZE; i++) {
+        equal += s1[i] == s2[i];
+    }
+    klee_assume(equal != SIZE);
+}
+
+int main()
+{
+    char s1[SIZE], s2[SIZE];
+    initialize_sym(s1, s2);
+
+    int res;
+    res = memcmps3(s1, s2, SIZE);
+    
+    _LZ__ORACLE(oracle(res));
+    return 0;
+}
+\end{lstlisting} 
+
+    \section{Programme \texttt{firmware\_updater} 2}
+    \label{annexe:prgm:fu2}
+    
+        Les programmes \texttt{firmware\_updater} simulent le processus de chargement d'un micro-programme depuis le réseau et la mise à jour du code local.
+        Le listing \ref{lst:firmware-updater-2} correspond à la version 2 de ce programme, qui inclut une checksum permettant de vérifier l'intégrité à différents points du programme.
+    
+        L'objectif d'attaque étudié consiste à réussir à corrompre le micro-programme, que ce soit en écrivant à la mauvaise adresse, ou en chargeant des données corrompues.
+        L'intégrité du micro-programme effectivement chargé en mémoire est vérifiée dans l'objectif d'attaque.
+    
+\lstset{caption={Programme d'analyse pour \texttt{firmware\_updater\_2}},label=lst:firmware-updater-2}
+\begin{lstlisting} 
+#include "lazart.h"
+#include "stdbool.h"
+#include "stdint.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+
+#define PAGE_NUMBER 4 // number of pages in a firmware
+#define SIZEP 3 // number of bytes in a page
+#define LOAD_ADDRESS 0x0F // default load address value for the new firmware
+#define BAD_ADDRESS 0x0 // represents any corrupted load address ...
+
+#define NW_CANARY() 3
+#define NW_SIZE_BASE() (PAGE_NUMBER * SIZEP)
+#ifndef GLOBAL_CHECKSUM
+#define NW_SIZE_GCS() 0
+#else
+#define NW_SIZE_GCS() 1
+#endif
+#ifndef NO_CHECKSUM
+#define NW_SIZE_CS() (PAGE_NUMBER) 
+#else
+#define NW_SIZE_CS() 0
+#endif
+#define NW_SIZE() (NW_SIZE_BASE() + NW_SIZE_CS() + NW_SIZE_GCS() + NW_CANARY())
+
+#include <stdio.h>
+#include <stdint.h>
+
+typedef uint8_t byte_t;
+
+typedef struct {
+    byte_t t[SIZEP];
+    byte_t checksum;
+} page_t;
+
+
+typedef struct {
+    page_t pages[PAGE_NUMBER];
+} firmware_t;
+
+byte_t memory[NW_SIZE() * 2] = {0}; 
+
+byte_t network[NW_SIZE()] = {
+    0xDE, 0xAD, 0xAA,
+#ifndef NO_CHECKSUM
+    (0xDE ^ 0xAD ^ 0xAA),
+#endif
+    0xAD, 0xDA, 0xAD, 
+#ifndef NO_CHECKSUM
+    (0xAD ^ 0xDA ^ 0xAD),
+#endif
+    0xDE, 0xAD, 0xAA,
+#ifndef NO_CHECKSUM
+    (0xDE ^ 0xAD ^ 0xAA),
+#endif
+    0xAD, 0xDA, 0xAD,
+#ifndef NO_CHECKSUM
+    (0xAD ^ 0xDA ^ 0xAD),
+#endif
+#ifdef GLOBAL_CHECKSUM
+#error "Not implemented"
+#endif
+    0xF5, 0xF5, 0xF5 
+};
+
+byte_t receiveData() {
+    static unsigned nwstate = 0;
+
+    if(nwstate >= (NW_SIZE()))
+        exit(1);
+    return network[nwstate++];
+}
+
+bool save_firmware(uint8_t* memory, firmware_t* firmware, unsigned adress)
+{
+    for(unsigned i = 0; i < PAGE_NUMBER; ++i) {
+        page_t* page = &firmware->pages[i];
+        uint8_t cs = computeChecksum(page);
+        if(cs != page->checksum) {
+            _LZ__CM("fcs");
+        }
+        
+        unsigned offset = adress + (i * SIZEP);
+        for(int k = 0; k < SIZEP; ++k) {
+            memory[offset + k] = page->t[k]; 
+        }
+    }
+
+    return true;
+}
+
+void init_firmware(firmware_t* firmware) {
+    for(int i = 0; i < PAGE_NUMBER; ++i) {
+        firmware->pages[i].checksum = 0;
+        for(int k = 0; k < SIZEP; ++k)
+            firmware->pages[i].t[k] = 0xFE;
+    }
+            
+}
+
+unsigned oracle_oob = 0;
+unsigned oracle_diff = 0;
+
+void verify_oracles(uint8_t* memory) {
+    for(unsigned i = 0; i < PAGE_NUMBER; ++i) {
+        unsigned i_fw = LOAD_ADDRESS + (i * SIZEP); // [B B B B B B]
+        unsigned i_nw = (i * (SIZEP + 1)); // [B B B CS B B B CS]
+
+        for(int k = 0; k < SIZEP; ++k) {
+            if (memory[i_fw + k] != network[i_nw + k]) {
+                oracle_diff++;
+            }
+        }
+    }
+} 
+
+uint8_t computeChecksum(page_t* page_buffer) {
+    // Fixed size.
+    return page_buffer->t[0] ^ page_buffer->t[1] ^ page_buffer->t[2]; 
+}
+
+void firmware_updater() {
+    firmware_t firmware;
+    unsigned page_counter = 0;
+    init_firmware(&firmware);
+
+    // Lecture 
+    int byte_counter = 0;
+    while(true) {
+        byte_t received = receiveData();
+        page_t* page_buffer = &firmware.pages[page_counter];
+        page_buffer->t[byte_counter] = received;
+        byte_counter = byte_counter + 1;
+
+        if(byte_counter >= SIZEP) { // End of page
+            byte_t cs = receiveData(); // return expected checksum 
+            // Compute checksum 
+            page_buffer->checksum = computeChecksum(page_buffer);
+            if(cs != page_buffer->checksum) {
+                _LZ__CM("ics");
+            }
+            page_counter++;
+            byte_counter = 0;
+            
+            if(page_counter >= PAGE_NUMBER) {
+                break;
+            }
+            continue; // next page 
+        }
+    }
+
+
+    // check that all pages have been (properly) transfered)
+    if (page_counter != PAGE_NUMBER) {
+        _LZ__CM("pc");
+    }
+    save_firmware(memory, &firmware, LOAD_ADDRESS);
+}
+
+
+bool oracle() {
+    return (oracle_diff > 0) | (oracle_oob > 0);
+}
+
+
+
+bool valid() {
+    for(unsigned i = 0; i < PAGE_NUMBER; ++i) {
+        unsigned i_fw = LOAD_ADDRESS + (i * SIZEP); // [B B B B B B]
+#ifndef NO_CHECKSUM
+        unsigned i_nw = (i * (SIZEP + 1)); // [B B B CS B B B CS]
+#else
+        unsigned i_nw = i * SIZEP;
+#endif
+        for(int k = 0; k < SIZEP; ++k) {
+            if (memory[i_fw + k] != network[i_nw + k]) {
+                return false;
+            }
+        }
+    }
+    return true;
+} 
+
+bool oob() {
+    for(unsigned i = 0; i < LOAD_ADDRESS; ++i) {
+        if(memory[i] != 0) {
+            return true;
+        }
+    }
+    for(unsigned i = LOAD_ADDRESS + (SIZEP * PAGE_NUMBER); i < (NW_SIZE() * 2); ++i) {
+        if(memory[i] != 0)
+            return true;
+    }
+    return false;
+}
+
+
+int main()
+{
+    firmware_updater();
+
+#ifdef LAZART
+    _LZ__ORACLE(!valid() | oob());
+#endif
+}
+\end{lstlisting} 
+
+
+\chapter{Annexes supplémentaires}
+
+    \section{Contraintes ILP pour le programme \texttt{memcmps3}}
+    \label{annexe:ilp-memcmp}
+
+        L'implémentation du placement optimal dans Lazart génère les contraintes d'un programme ILP dans le format de l'outil externe utilisé (voir section \ref{sec:placement-exps}). Le listing \ref{lst:ilp-memcmp-1} correspond aux contraintes pour le modèle de faute $DL$ en une faute et le listing \ref{lst:ilp-memcmp-3} corresponds aux contraintes générées pour le modèle de faute $TI+DL$ pour 3 fautes, le fichier de contraintes en quatre fautes comporte 136 lignes).
+
+\lstset{caption={Contraintes \gls{ilp} pour le programme \texttt{memcmps3} ($DL$, 1 faute)},label=lst:ilp-memcmp-1,language=bash}
+\begin{lstlisting}
+# Ips
+var ip7 >= 1;
+var ip6 >= 1;
+var ip14 >= 1;
+
+minimize z: ip7 + ip6 + ip14;
+subject to c0: ip14 >= 3;
+subject to c1: ip6 + ip7 >= 3;
+subject to c2: ip6 + ip14 >= 3;
+subject to c3: ip6 + ip14 >= 3;
+\end{lstlisting}
+
+\lstset{caption={Contraintes \gls{ilp} pour le programme \texttt{memcmps3} ($TI+DL$, 3 fautes)},label=lst:ilp-memcmp-3,language=bash}
+\begin{lstlisting}
+# Ips
+var ip12F >= 1;
+var ip20 >= 1;
+var ip13 >= 1;
+var ip8 >= 1;
+var ip9F >= 1;
+var ip11 >= 1;
+var ip10 >= 1;
+var ip9T >= 1;
+
+minimize z: ip12F + ip20 + ip13 + ip8 + ip9F + ip11 + ip10 + ip9T;
+subject to c0: ip20 >= 4;
+subject to c1: ip9F + ip20 >= 4;
+subject to c2: ip8 + ip20 >= 4;
+subject to c3: ip8 + ip10 >= 4;
+subject to c4: ip9F + ip10 >= 4;
+subject to c5: ip8 + ip20 >= 4;
+subject to c6: ip8 + ip11 + ip20 >= 4;
+subject to c7: ip9F + ip11 + ip20 >= 4;
+subject to c8: ip9F + ip11 + ip20 >= 4;
+subject to c9: ip8 + ip10 + ip20 >= 4;
+subject to c10: ip8 + ip10 + ip11 >= 4;
+subject to c11: ip9F + ip10 + ip11 >= 4;
+subject to c12: ip8 + ip9T + ip20 >= 4;
+subject to c13: ip8 + ip10 + ip11 >= 4;
+subject to c14: ip8 + ip12F + ip20 >= 4;
+subject to c15: ip8 + ip9F + ip10 >= 4;
+subject to c16: ip8 + ip11 + ip20 >= 4;
+subject to c17: ip8 + ip9F + ip20 >= 4;
+subject to c18: ip9F + ip10 + ip12F >= 4;
+subject to c19: ip9F + ip10 + ip11 >= 4;
+subject to c20: ip9F + ip12F + ip20 >= 4;
+subject to c21: ip8 + ip10 + ip12F >= 4;
+subject to c22: ip8 + ip12F + ip13 >= 4;
+subject to c23: ip9F + ip12F + ip13 >= 4;
+subject to c24: ip9F + ip10 + ip20 >= 4;
+subject to c25: ip9F + ip11 + ip13 >= 4;
+subject to c26: ip8 + ip11 + ip13 >= 4;
+\end{lstlisting}

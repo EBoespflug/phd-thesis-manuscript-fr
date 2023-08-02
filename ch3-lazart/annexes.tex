@@ -1,0 +1,134 @@
+       
+\chapter{Documentation sur Lazart}
+
+    Cette annexe présente différentes tables sur les paramètres et options de Lazart.
+
+    \section{Paramètres d'une analyse dans l'API Python}
+    \label{annexe:lz:analysis-args}
+
+        La table \ref{tbl:lz:analysis-args} décrit les paramètres d'une analyse dans l'\gls{yaml} Python de Lazart.
+        La colonne "Paramètre" indique le nom du paramètre. La colonne "Arg." indique si l'argument est positionnel (\texttt{argX}) ou par mot-clef (\texttt{kwargs}) et la colonne "Type" indique son type.
+        La colonne "Défaut" correspond à la valeur par défaut de l'argument et "YAML" indique si cet argument a une correspondance dans le fichier de mutation \gls{yaml} ou s'il est réservé à l'\gls{api} Python.
+            
+        \begin{table}[htp]
+        \scriptsize
+        \centering
+            \setlength\tabcolsep{3pt}
+            \begin{tabular}{l|c|c|c|c|l}
+            \multicolumn{1}{c|}{Paramètre} & Arg. & Type & Défaut & YAML & \multicolumn{1}{c}{Description} \\ \hline
+            intput\_files & arg0 & \texttt{List[str]} & req. & non & Liste des fichier sources. \\ \hline
+            attack\_model & arg1 & \texttt{str | dict} & req. & oui & \begin{tabular}[c]{@{}l@{}}Modèle d'attaquant, fourni soit comme le\\ chemin vers le fichier YAML, soit sous la\\ forme d'un dictionnaire décrivant les\\ modèles appliqués à chaque fonction.\end{tabular} \\ \hline
+            path & kwarg & \texttt{str} & généré & non & \begin{tabular}[c]{@{}l@{}}Chemin du dossier dans lequel les fichiers\\ de l'analyse seront générés.\end{tabular} \\ \hline
+            name & kwarg & \texttt{str} & \texttt{""} & non & Nom de l'analyse. \\ \hline
+            flag & kwarg & \texttt{int} & \texttt{Atk} & non & \begin{tabular}[c]{@{}l@{}}Informations sur le type d'analyse, utilisé\\  pour des fonctions automatiques comme \\ texttt{execute} ou \texttt{report}.\end{tabular} \\ \hline
+            max\_order & kwarg & \texttt{int} & 2 & non & Limite de faute pour l'analyse. \\ \hline
+            rename\_bb & kwarg & \texttt{List[str]} & \texttt{"\_\_mut\_\_"} & oui & \begin{tabular}[c]{@{}l@{}}Description\footnote{\label{fn:tbl-lazart-analysis-params-mut} \texttt{"\_\_mut\_\_"} et \texttt{"\_\_mut\_\_"} correspondent respectivement à l'ensemble des fonctions sur lesquelles au moins un modèle est défini et à l'ensemble de toutes les fonctions.} des fonctions où appliquer de\\ renommage des blocs de base.\end{tabular} \\ \hline
+            add\_trace & kwarg & \texttt{List[str]} & \texttt{"\_\_mut\_\_"} & oui & \begin{tabular}[c]{@{}l@{}}Description des fonctions où appliquer\\ la trace du chemin de l'exécution.\end{tabular} \\ \hline
+            compiler & kwarg & \texttt{str} & \texttt{"clang"} & non & Nom de la commande du compilateur \\ \hline
+            linker & kwarg & \texttt{str} & \texttt{"clang"} & non & Nom de la commande de l'éditeur des liens \\ \hline
+            disassembler & kwarg & \texttt{str} & \texttt{"clang"} & non & Nom de la commande du désassembleur \\ \hline
+            compiler\_args & \multicolumn{1}{l|}{kwarg} & \texttt{str} & \texttt{""} & non & \begin{tabular}[c]{@{}l@{}}Arguments supplémentaires pour l'appel de\\ l'éditeur des liens\end{tabular} \\ \hline
+            linker\_args & kwarg & \texttt{str} & \texttt{""} & non & \begin{tabular}[c]{@{}l@{}}Arguments supplémentaires pour l'appel du\\ compilateur\end{tabular} \\ \hline
+            dis\_args & kwarg & \texttt{str} & \texttt{""} & non & \begin{tabular}[c]{@{}l@{}}Arguments supplémentaires pour l'appel du\\ désassembleur\end{tabular} \\ \hline
+            wolverine\_args & kwarg & \texttt{str} & \texttt{""} & non & \begin{tabular}[c]{@{}l@{}}Arguments supplémentaires pour l'appel de\\ Wolverine.\end{tabular} \\ \hline
+            klee\_args & kwarg & \texttt{str} & \texttt{"emit-all-errors"} & non & Arguments pour l'appel de Klee. \\ \hline
+            countermeasures & \multicolumn{1}{l|}{kwarg} & \multicolumn{1}{l|}{\texttt{List[dict]}} & \texttt{[]} & oui & \begin{tabular}[c]{@{}l@{}}Liste des contre-mesures automatiques à \\ appliquer sur le programme à analyser.\end{tabular}
+            \end{tabular}
+        \caption{Paramètres d'une analyse dans l'API Python.}
+        \label{tbl:lz:analysis-args}
+        \end{table}
+                
+    \section{Arguments des analyses}
+    \label{annexe:lz:param-analysis}
+
+        La table \ref{tbl:lz:param-analysis} décrit les arguments et options des différentes analyses (traitements) de Lazart.
+        La colonne "Argument" indique le nom de l'argument et la colonne "Opt" indique si celui-ci est optionnel.
+        "Type" correspond au type de l'argument et "Défaut" à sa valeur par défaute.
+        Les colonnes "AA", "AAR", "HS", "DO" et "PL" indiquent si l'argument est disponible pour respectivement les analyses d'attaque, de redondance-équivalence, de points chauds, d'optimisation de détecteur et de placement.
+    
+        \begin{table}[htp]
+        \footnotesize
+        \centering
+            \setlength\tabcolsep{3pt}
+            \begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+            \hline
+            Argument & Opt & Type & Défaut & AA & AAR & HS & DO & PL \\ \hline
+            analysis & - & \texttt{(Trace) => bool} & \texttt{lambda t: t.satisfies()} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\ \hline
+            s\_fct & $\checkmark$ & \texttt{(Trace) => bool} & \texttt{lambda t: t.satisfies()} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & - \\ \hline
+            quiet & $\checkmark$ & \texttt{bool} & \texttt{false} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\ \hline
+            lazy & $\checkmark$ & \texttt{bool} & \texttt{false} & - & $\checkmark$ & - & - & - \\ \hline
+            eq\_rule & $\checkmark$ & \texttt{(Trace, Trace) => bool} & Equivalence & - & $\checkmark$ & - & - & - \\ \hline
+            red\_rule & $\checkmark$ & \texttt{(Trace, Trace) => bool} & Préfixe & - & $\checkmark$ & - & - & - \\ \hline
+            do\_red & $\checkmark$ & \texttt{bool} & \texttt{true} & - & $\checkmark$ & - & - & - \\ \hline
+            do\_eq & $\checkmark$ & \texttt{bool} & \texttt{true} & - & $\checkmark$ & - & - & - \\ \hline
+            ccp\_list & $\checkmark$ & \texttt{[str]} & all & - & - & - & $\checkmark$ & - \\ \hline
+            weight\_fct & $\checkmark$ & \texttt{([str]) => int} & \texttt{lambda dr: len(dr)} & - & - & - & $\checkmark$ & - \\ \hline
+            \end{tabular} 
+        \caption{Arguments des analyses}
+        \label{tbl:lz:param-analysis}
+        \end{table}
+        
+    \section{Defines macros de Lazart}
+    \label{annexe:lz:defines}
+    
+        La table \ref{tbl:lz:defines} donne la liste des macros définies de Lazart lors de la compilation du programme, qui dépendent du type d'analyse et des options sélectionnées.
+        Les colonnes "Macro" et "Type" correspondent respectivement à l'identifiant et au type de la macro.
+        La colonne "Définition" précise si la macro est définie par Lazart en fonction de l'analyse ou précisée par l'utilisateur.
+        
+        \begin{table}[htp]
+        \footnotesize
+        \centering
+            \setlength\tabcolsep{3pt}
+            \begin{tabular}{|l|c|c|l|}
+            \hline
+            \multicolumn{1}{|c|}{Macro} & Type & Définition & \multicolumn{1}{c|}{Description} \\ \hline
+            \texttt{LAZART} & define & lazart & Macro définie dans toute analyse avec Lazart. \\ \hline
+            \texttt{\_LZ\_\_VERSION} & string & lazart & Détermine la version actuelle de Lazart core. \\ \hline
+            \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_VERSION\_MAJOR}\\ \texttt{\_LZ\_\_VERSION\_MINOR}\\ \texttt{\_LZ\_\_VERSION\_PATCH}\end{tabular} & int & lazart & \begin{tabular}[c]{@{}l@{}}Valeur entière correspondant au numéro de version \\ (major.minor.patch) de l'outil.\end{tabular} \\ \hline
+            \texttt{\_LZ\_\_ATTACKS} & define & lazart & Macro définie si l'analyse est une analyse d'attaques. \\ \hline
+            \texttt{\_LZ\_\_CPPO} & define & lazart & \begin{tabular}[c]{@{}l@{}}Macro définie si l'analyse est une analyse d'optimisation de\\ contre-mesures.\end{tabular} \\ \hline
+            \texttt{\_LZ\_\_PLACEMENT} & define & lazart & \begin{tabular}[c]{@{}l@{}}Macro définie si l'analyse est une analyse de placement de\\ contre-mesures.\end{tabular} \\ \hline
+            \texttt{\_LZ\_\_NO\_STD} & define & utilisateur & \begin{tabular}[c]{@{}l@{}}Si cette macro est définie, l'API C de Lazart est implémentée \\ sans utiliser la bibliothèque standard C.\end{tabular} \\ \hline
+            \texttt{\_LZ\_\_MUT\_VALUE} & define & utilisateur & \begin{tabular}[c]{@{}l@{}}Active la récupération des valeurs injectées pour le modèle de\\ mutation de données.\end{tabular} \\ \hline
+            \texttt{\_LZ\_\_CM\_USE\_EXIT} & \multicolumn{1}{l|}{define} & \multicolumn{1}{l|}{utilisateur} & \begin{tabular}[c]{@{}l@{}}Si cette macro est définie, les détecteurs stoppant sont implé-\\ mentés avec \texttt{exit} plutôt que \texttt{klee\_assume}.\end{tabular} \\ \hline
+            \end{tabular}
+        \caption{Macros définies dans Lazart}
+        \label{tbl:lz:defines}
+        \end{table}
+        
+    \section{Fonctions d'instrumentation de Lazart}
+    \label{annexe:lz:instr-fct}
+    
+        La table \ref{tbl:lz:instr-fct} liste les différentes fonctions d'instrumentation supportées par Lazart.
+        La colonne "Catégorie" précise le type de catégorie de la commande et "Commande" indique l'identifiant.
+        La colonne "Args." correspond aux paramètres de la fonction ou de la macros et précise leurs types. La colonne "Étape" indique à quelle phase d'une analyse la fonction d'instrumentation est traitée par Lazart.
+        Finalement la dernière colonne donne une description de la commande.
+    
+        \begin{sidewaystable}
+            \scriptsize
+            \setlength\tabcolsep{1.5pt}
+            \begin{tabular}{|l|l|l|c|l|}
+            \hline
+            \multicolumn{1}{|c|}{Catégorie} & \multicolumn{1}{c|}{Commande} & \multicolumn{1}{c|}{Args.} & Étape & \multicolumn{1}{c|}{Description} \\ \hline
+            \multirow{2}{*}{Utilitaire} & \texttt{\_LZ\_\_RENAME\_BB} & (str) & Pre-traitement & Renomme le bloc de base courant avec la chaîne de caractère spécifiée. \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_MAX\_DEPTH} & (int, expr) & DSE & \begin{tabular}[c]{@{}l@{}}Effectue une action lorsqu'un compteur local atteint une certaine valeur. Généralement utilisé\\ de manière à limiter l'exécution d'une boucle ou une récursion. Prend en argument la limite de\\ profondeur l'expression à exécuter.\end{tabular} \\ \hline
+            \begin{tabular}[c]{@{}l@{}}Contrôles\\ des modèles\end{tabular} & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_DISABLE\_BB}\\ \texttt{\_LZ\_\_DISABLE\_FUNCTION}\end{tabular} & () & Mutation & Désactive toute mutation dans le bloc de base ou la fonction. \\ \hline
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_DISABLE\_MODEL}\\ \texttt{\_LZ\_\_ENABLE\_MODEL}\end{tabular} & (str) & Mutation & Désactive / réactive un modèle de faute nommé à partir de ce point de la mutation. \\ \hline
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_DISABLE\_MODELS}\\ \texttt{\_LZ\_\_ENABLE\_MODELS}\end{tabular} & () & Mutation & Désactive / réactive tous les modèles de fautes à partir de ce point de l'exécution symbolique. \\ \hline
+             & \texttt{\_LZ\_\_RESET} & () & Mutation & Réinitialise tous les modèles activés et désactivés. \\ \hline
+            \multirow{6}{*}{IP utilisateur} & \texttt{\_LZ\_\_mut\_ti} & (bool, str, str, str) & Mutation & \begin{tabular}[c]{@{}l@{}}Fonction de mutation pour l'inversion de test prenant en entrée la condition à fauter,\\ l'identifiant du point d'injection et les noms des deux blocs de base cibles.\end{tabular} \\ \cline{2-5} 
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_mut\_ti\_true}\\ \texttt{\_LZ\_\_mut\_ti\_false}\end{tabular} & (bool, str, str) & Mutation & Fonction de mutation pour l'inversion de test où seule l'une des branche peut être fautée. \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_mut\_dl\_fix\_iN} & (intN, intN, str) & Mutation & \begin{tabular}[c]{@{}l@{}}Fonctions de mutation pour l'injection de donnée fixe prenant en entrée la valeur originale,\\ la valeur fautée et l'identifiant du point d'injection.\end{tabular} \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_mut\_dl\_sym\_iN} & (intN, str) & Mutation & \begin{tabular}[c]{@{}l@{}}Fonctions de mutation pour l'injection de donnée arbitraire non-contrainte prenant en entrée\\ la valeur originale et l'identifiant du point d'injection.\end{tabular} \\ \cline{2-5} 
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_mut\_dl\_sym\_pred\_iN}\\ \texttt{\_LZ\_\_mut\_dl\_sym\_fct\_iN}\end{tabular} & \begin{tabular}[c]{@{}l@{}}(intN, str, \\     (intN) -> bool) \\ (intN, str,\\     (intN) -> intN)\end{tabular} & Mutation & \begin{tabular}[c]{@{}l@{}}Fonctions de mutation pour l'injection de donnée arbitraire contrainte prenant en entrée la\\ valeur originale, l'identifiant du point d'injection ainsi que la fonction de contrainte ou de\\ prédicat.\end{tabular} \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_mut\_jump} & (label, str) & Mutation & Macro pour le saut paramètré par un label de saut et un identifiant de point d'injection. \\ \hline
+            \multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Objectif\\ d'attaque\end{tabular}} & \texttt{\_LZ\_\_ORACLE} & (bool) & DSE & \begin{tabular}[c]{@{}l@{}}Macro de définition de l'objectif d'attaque.\\ \texttt{Correspond à \texttt{klee\_assume}}.\end{tabular} \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_triggered} & () -> bool & DSE & \begin{tabular}[c]{@{}l@{}}Fonction permettant de déterminer si au moins une contre-mesure a été déclenchée sur\\ l'exécution courante.\end{tabular} \\ \cline{2-5} 
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_SYM}\\ \texttt{\_LZ\_\_SYM\_N}\end{tabular} & \begin{tabular}[c]{@{}l@{}}(ptr, size)\\ (ptr, size, str)\end{tabular} & DSE & \begin{tabular}[c]{@{}l@{}}Macros pour la définition de variables symbolique. Prend en paramètre la zone mémoire à\\ rendre symbolique et eventuellement un nom (utilisé par Klee).\\ \texttt{Correspond à \texttt{klee\_make\_symbolic}}.\end{tabular} \\ \cline{2-5} 
+             & \texttt{\_LZ\_\_EVENT} & (str) & TP & \begin{tabular}[c]{@{}l@{}}Macro permettant d'ajouter un évènement utilisateur dans la trace, pouvant ensuite être trié\\ dans le script Python. Prend en paramètre une chaîne de caractère de description de l'évènement.\end{tabular} \\ \hline
+            \multirow{2}{*}{Contre-mesures} & \texttt{\_LZ\_\_CM} & (str) & TP & \begin{tabular}[c]{@{}l@{}}Macro de déclenchement d'un détecteur, utilise la version bloquante ou non-bloquante en\\ fonction de l'analyse. Prend en paramètre l'identifiant du détecteur.\end{tabular} \\ \cline{2-5} 
+             & \begin{tabular}[c]{@{}l@{}}\texttt{\_LZ\_\_trigger\_detector}\\ \texttt{\_LZ\_\_trigger\_detector\_stop}\end{tabular} & (str) & TP & Fonctions de déclenchement de détecteur. Prend en paramètre l'identifiant du détecteur. \\ \hline
+            \end{tabular}
+        \caption{Fonctions d'instrumentation dans Lazart}
+        \label{tbl:lz:instr-fct}
+        \end{sidewaystable}
