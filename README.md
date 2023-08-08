@@ -1,5 +1,5 @@
 # phd-thesis-manuscript-fr
 
 <p align="center">
-  <img src="couverture_these.png" width="350" title="hover text">
+  <a href="phd-thesis-manuscript-fr"><img src="couverture_these.png" title="Manuscript cover page"></a>
 </p>
