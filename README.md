@@ -1,6 +1,8 @@
 # Tools for code and countermeasures analysis against multiple faults attacks - PhD Thesis Manuscript (french)
 
-**test**
+<p align="center">
+  <a href="phd-thesis-manuscript-fr.pdf"><img src="couverture_these.png" title="Manuscript cover page"></a>
+</p>
 
 This repository contains the LaTeX source code of my PhD Thesis manuscript (in french).
 The PDF file can be found [here](phd-thesis-manuscript-fr.pdf).
@@ -13,7 +15,10 @@ This PhD thesis was publicly defended at (VERIMAG)[https://www-verimag.imag.fr/?
  - David Féliot (invited)
  - Laurent Mounier (invited)
 
-### Information
+test. 
+
+
+## Information
 
  - ***title***: "Outils pour l'analyse de code et de contre-mesures pour l'injection de fautes multiples"
  - ***title (english)***: "Tools for code and countermeasures analysis against multiple faults
