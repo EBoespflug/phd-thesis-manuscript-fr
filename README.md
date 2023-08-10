@@ -1,8 +1,6 @@
 # Tools for code and countermeasures analysis against multiple faults attacks - PhD Thesis Manuscript (french)
 
-<p align="center">
-  <a href="phd-thesis-manuscript-fr.pdf"><img src="couverture_these.png" title="Manuscript cover page"></a>
-</p>
+**test**
 
 This repository contains the LaTeX source code of my PhD Thesis manuscript (in french).
 The PDF file can be found [here](phd-thesis-manuscript-fr.pdf).
@@ -34,6 +32,6 @@ useful in the program. A methodology to optimise the placementof countermeasures
 been developed, able to determine which portions of the protections in a program can be
 removed, while maintaining the same level of security.
 
-# Usage
+## Usage
 
 LaTeX main file is [manuscrit.tex](src/manuscrit.tex) and all file (source code, images...) are located in the `src/` folder. 
