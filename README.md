@@ -36,4 +36,4 @@ removed, while maintaining the same level of security.
 
 # Usage
 
-LaTeX main file is [manuscrit.tex](src/manuscrit.tex). This code has been imported from an Overleaf project.
+LaTeX main file is [manuscrit.tex](src/manuscrit.tex) and all file (source code, images...) are located in the `src/` folder. 
