@@ -1,4 +1,4 @@
-# PhD Thesis Manuscript - Tools for code and countermeasures analysis against multiple faults attacks
+# Tools for code and countermeasures analysis against multiple faults attacks - PhD Thesis Manuscript (french)
 
 <p align="center">
   <a href="phd-thesis-manuscript-fr.pdf"><img src="couverture_these.png" title="Manuscript cover page"></a>
@@ -6,14 +6,16 @@
 
 This repository contains the LaTeX source code of my PhD Thesis manuscript (in french).
 The PDF file can be found [here](phd-thesis-manuscript-fr.pdf).
-This PhD thesis was publicly defended at (https://www-verimag.imag.fr/?lang=en)[VERIMAG] laboratory the 28 August 2023 (see defense repository [here](todo)), in front of the jury composed of:
+This PhD thesis was publicly defended at (VERIMAG)[https://www-verimag.imag.fr/?lang=en]  laboratory on August 28, 2023. The defense repository will be available [here](todo). The thesis defense jury included the following members:
  - Vincent Beroulle
- - Marie-Laure Potet
  - Karine Heydemann
- - Julien Signoles
  - Thomas Jensen
+ - Marie-Laure Potet
+ - Julien Signoles
+ - David Féliot (invited)
+ - Laurent Mounier (invited)
 
-## Information
+### Information
 
  - ***title***: "Outils pour l'analyse de code et de contre-mesures pour l'injection de fautes multiples"
  - ***title (english)***: "Tools for code and countermeasures analysis against multiple faults
@@ -32,3 +34,6 @@ useful in the program. A methodology to optimise the placementof countermeasures
 been developed, able to determine which portions of the protections in a program can be
 removed, while maintaining the same level of security.
 
+# Usage
+
+LaTeX main file is [manuscrit.tex](src/manuscrit.tex). This code has been imported from an Overleaf project.
