@@ -15,12 +15,7 @@ This PhD thesis was publicly defended at (VERIMAG)[https://www-verimag.imag.fr/?
  - David Féliot (invited)
  - Laurent Mounier (invited)
 
-test. 
-
-
-## Usage
-
-## Information
+## Information
 
  - ***title***: "Outils pour l'analyse de code et de contre-mesures pour l'injection de fautes multiples"
  - ***title (english)***: "Tools for code and countermeasures analysis against multiple faults
