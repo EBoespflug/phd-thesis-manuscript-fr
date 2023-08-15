@@ -7,7 +7,7 @@
 This repository contains the LaTeX source code of my PhD Thesis manuscript (in french).
 The PDF file can be found [here](phd-thesis-manuscript-fr.pdf).
 
-This PhD thesis was publicly defended at [VERIMAG](https://www-verimag.imag.fr/?lang=en)  laboratory on August 28, 2023. The defense repository will be available [here](todo). The thesis defense jury included the following members:
+This PhD thesis was publicly defended at [VERIMAG](https://www-verimag.imag.fr/?lang=en)  laboratory on August 28, 2023. The defense repository will be available [here](https://github.com/EBoespflug/phd-thesis-defense-fr). The thesis defense jury included the following members:
  - Vincent Beroulle
  - Karine Heydemann
  - Thomas Jensen
